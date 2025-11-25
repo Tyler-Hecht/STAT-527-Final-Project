@@ -56,6 +56,7 @@ M.estimators <- c(
 Perform robust regression with outliers present
 
 ```{r}
+MADs <- numeric()
 for (M.estimator in names(M.estimators)) {
   M.phi <- M.estimators[[M.estimator]]
   
@@ -66,13 +67,15 @@ for (M.estimator in names(M.estimators)) {
     model <- rlm(arr_delay ~ ., data = data, psi = M.phi)
   }
   
-  metric <- mad(model$residuals) # mean absolute deviation
+  MAD <- mad(model$residuals) # mean absolute deviation
+  MADs <- append(MADs, MAD)
   
   params <- summary(model)$coef
   
-  print(paste(M.estimator, metric, sep = ": "))
+  print(paste(M.estimator, MAD, sep = ": "))
   print(params)
 }
+barplot(MADs, names.arg = names(M.estimators), ylab = "Median Absolute Deviation", ylim = c(18, 19.5))
 ```
 Identify outliers based on least-squares model
 
@@ -86,6 +89,7 @@ data.no.outliers <- data[-outlier.indices,]
 Perform robust regression without outliers present
 
 ```{r}
+MADs = numeric()
 for (M.estimator in names(M.estimators)) {
   M.phi <- M.estimators[[M.estimator]]
   
@@ -96,12 +100,14 @@ for (M.estimator in names(M.estimators)) {
     model <- rlm(arr_delay ~ ., data = data.no.outliers, psi = M.phi)
   }
   
-  metric <- mad(model$residuals) # mean absolute deviation
+  MAD <- mad(model$residuals) # mean absolute deviation
+  MADs <- append(MADs, MAD)
   
   params <- summary(model)$coef
   
-  print(paste(M.estimator, metric, sep = ": "))
+  print(paste(M.estimator, MAD, sep = ": "))
   print(params)
 }
+barplot(MADs, names.arg = names(M.estimators), ylab = "Median Absolute Deviation", ylim = c(18, 19))
 ```
 
