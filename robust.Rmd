@@ -18,7 +18,7 @@ Read data and subset to columns used for RLM
 
 ```{r}
 df <-  read.csv("full_data_ohare_2024_v2.csv")
-data <- df[, c("arr_delay", "prcp", "snow", "tmax", "distance", "dow_mod", "crs_dep_time_base10")]
+data <- df[,c("arr_delay", "prcp", "snow", "awnd", "tmax", "distance", "crs_dep_time_base10")]
 data <- drop_na(data)
 ```
 
@@ -78,12 +78,13 @@ for (M.estimator in names(M.estimators)) {
   print(paste(M.estimator, MAD, sep = ": "))
   print(params)
 }
+write.csv(MADs, "MADs1.csv")
 ```
 Identify outliers based on least-squares model
 
 ```{r}
 model.lm = lm(arr_delay ~ ., data = data)
-outlier.test.results <- outlierTest(model.lm, cutoff = 0.05, n.max = 2000)
+outlier.test.results <- outlierTest(model.lm, cutoff = 0.05, n.max = nrow(data))
 outlier.indices <- as.integer(names(outlier.test.results$rstudent))
 print(length(outlier.indices))
 data.no.outliers <- data[-outlier.indices,]
@@ -112,5 +113,6 @@ for (M.estimator in names(M.estimators)) {
   print(paste(M.estimator, MAD, sep = ": "))
   print(params)
 }
+write.csv(MADs, "MADs2.csv")
 ```
 
