@@ -10,13 +10,15 @@ library(MASS)
 library(tidyverse)
 library(quantreg)
 library(car)
+library(this.path)
+setwd(this.path::here())
 ```
 
 Read data and subset to columns used for RLM
 
 ```{r}
-df <-  read.csv("merged_data.csv")
-data <- df[, c("arr_delay", "distance", "dep_hr", "awnd", "prcp", "snow", "tmax", "tmin")]
+df <-  read.csv("full_data_ohare_2024.csv")
+data <- df[, c("arr_delay", "prcp", "snow", "tmax", "tmin")]
 data <- drop_na(data)
 ```
 
@@ -29,13 +31,13 @@ psi.ls <- function(u, deriv = 0) {
   return(rep(1, n))
 }
 
-# Andrews' Sine (not working currently)
+# Andrews' Sine
 psi.andrew <- function(u, c = 1.339, deriv = 0) {
   t = u/c
   if (!deriv) {
-    return(ifelse(abs(u)<pi*c, sin(t)/t, 0))
+    return(ifelse(abs(u)<=pi*c, sin(t)/u, 0))
   }
-  return(ifelse(abs(u)<pi*c, (u*cos(t)-c*sin(t))/u^2, 0))
+  return(ifelse(abs(u)<=pi*c, cos(t)/c, 0))
 }
 ```
 
@@ -47,9 +49,8 @@ M.estimators <- c(
   least.square = psi.ls,
   least.abs.dev = NA,
   huber = psi.huber,
-  hampel = psi.hampel,
-  tukey = psi.bisquare
-  # andrews = psi.andrew
+  tukey = psi.bisquare,
+  andrews = psi.andrew
 )
 ```
 
@@ -68,21 +69,23 @@ for (M.estimator in names(M.estimators)) {
   }
   
   MAD <- mad(model$residuals) # mean absolute deviation
-  MADs <- append(MADs, MAD)
+  MADs[M.estimator] = MAD
   
   params <- summary(model)$coef
+  M.estimator.underscores = str_replace_all(M.estimator, "\\.", "_")
+  write.csv(params, paste("coefficients/params_", M.estimator.underscores, "_1.csv", sep = ""))
   
   print(paste(M.estimator, MAD, sep = ": "))
   print(params)
 }
-barplot(MADs, names.arg = names(M.estimators), ylab = "Median Absolute Deviation", ylim = c(18, 19.5))
 ```
 Identify outliers based on least-squares model
 
 ```{r}
 model.lm = lm(arr_delay ~ ., data = data)
-outlier.test.results <- outlierTest(model.lm, cutoff = 0.05, n.max = 200)
+outlier.test.results <- outlierTest(model.lm, cutoff = 0.05, n.max = 2000)
 outlier.indices <- as.integer(names(outlier.test.results$rstudent))
+print(length(outlier.indices))
 data.no.outliers <- data[-outlier.indices,]
 ```
 
@@ -101,13 +104,13 @@ for (M.estimator in names(M.estimators)) {
   }
   
   MAD <- mad(model$residuals) # mean absolute deviation
-  MADs <- append(MADs, MAD)
+  MADs[M.estimator] = MAD
   
-  params <- summary(model)$coef
+  M.estimator.underscores = str_replace_all(M.estimator, "\\.", "_")
+  write.csv(params, paste("coefficients/params_", M.estimator.underscores, "_2.csv", sep = ""))
   
   print(paste(M.estimator, MAD, sep = ": "))
   print(params)
 }
-barplot(MADs, names.arg = names(M.estimators), ylab = "Median Absolute Deviation", ylim = c(18, 19))
 ```
 
