@@ -17,8 +17,8 @@ setwd(this.path::here())
 Read data and subset to columns used for RLM
 
 ```{r}
-df <-  read.csv("full_data_ohare_2024.csv")
-data <- df[, c("arr_delay", "prcp", "snow", "tmax", "tmin")]
+df <-  read.csv("full_data_ohare_2024_v2.csv")
+data <- df[, c("arr_delay", "prcp", "snow", "tmax", "distance", "dow_mod", "crs_dep_time_base10")]
 data <- drop_na(data)
 ```
 
