@@ -11,6 +11,7 @@ library(tidyverse)
 library(quantreg)
 library(car)
 library(this.path)
+library(Metrics)
 setwd(this.path::here())
 ```
 
@@ -58,6 +59,7 @@ Perform robust regression with outliers present
 
 ```{r}
 MADs <- numeric()
+MSEs <- numeric()
 for (M.estimator in names(M.estimators)) {
   M.phi <- M.estimators[[M.estimator]]
   
@@ -68,32 +70,28 @@ for (M.estimator in names(M.estimators)) {
     model <- rlm(arr_delay ~ ., data = data, psi = M.phi)
   }
   
-  MAD <- mad(model$residuals) # mean absolute deviation
-  MADs[M.estimator] = MAD
+  MAD <- median(abs(model$residuals)) # median absolute deviation
+  MADs[M.estimator] <- MAD
+  
+  MSE <- Metrics::mse(model$residuals, model$fitted.values)
+  MSEs[M.estimator] <- MSE
   
   params <- summary(model)$coef
-  M.estimator.underscores = str_replace_all(M.estimator, "\\.", "_")
+  M.estimator.underscores <- str_replace_all(M.estimator, "\\.", "_")
   write.csv(params, paste("coefficients/params_", M.estimator.underscores, "_1.csv", sep = ""))
   
-  print(paste(M.estimator, MAD, sep = ": "))
+  print(paste(M.estimator, "MAD:", MAD, sep = " "))
+  print(paste(M.estimator, "MSE:", MSE, sep = " "))
   print(params)
 }
 write.csv(MADs, "MADs1.csv")
+write.csv(MSEs, "MSEs1.csv")
 ```
 Identify outliers based on least-squares model
 
 ```{r}
-model.lm = lm(arr_delay ~ ., data = data)
-outlier.test.results <- outlierTest(model.lm, cutoff = 0.05, n.max = nrow(data))
-outlier.indices <- as.integer(names(outlier.test.results$rstudent))
-print(length(outlier.indices))
-data.no.outliers <- data[-outlier.indices,]
-```
-
-Perform robust regression without outliers present
-
-```{r}
-MADs = numeric()
+MADs <- numeric()
+MSEs <- numeric()
 for (M.estimator in names(M.estimators)) {
   M.phi <- M.estimators[[M.estimator]]
   
@@ -104,15 +102,21 @@ for (M.estimator in names(M.estimators)) {
     model <- rlm(arr_delay ~ ., data = data.no.outliers, psi = M.phi)
   }
   
-  MAD <- mad(model$residuals) # mean absolute deviation
-  MADs[M.estimator] = MAD
+  MAD <- median(abs(model$residuals)) # median absolute deviation
+  MADs[M.estimator] <- MAD
   
-  M.estimator.underscores = str_replace_all(M.estimator, "\\.", "_")
+  MSE <- Metrics::mse(model$residuals, model$fitted.values)
+  MSEs[M.estimator] <- MSE
+  
+  params <- summary(model)$coef
+  M.estimator.underscores <- str_replace_all(M.estimator, "\\.", "_")
   write.csv(params, paste("coefficients/params_", M.estimator.underscores, "_2.csv", sep = ""))
   
-  print(paste(M.estimator, MAD, sep = ": "))
+  print(paste(M.estimator, "MAD:", MAD, sep = " "))
+  print(paste(M.estimator, "MSE:", MSE, sep = " "))
   print(params)
 }
 write.csv(MADs, "MADs2.csv")
+write.csv(MSEs, "MSEs2.csv")
 ```
 
